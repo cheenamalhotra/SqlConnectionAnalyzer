@@ -58,7 +58,7 @@ public class StageFaultHandlingTests
 
         AnalysisReport report = await analyzer.AnalyzeAsync(LocalConnection);
 
-        Finding socket = Assert.Single(report.AllFindings.Where(f => f.Code == "SCA0004"));
+        Finding socket = Assert.Single(report.AllFindings, f => f.Code == "SCA0004");
         Assert.Contains("refused", socket.Detail, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("between the two probes", socket.Detail);
         Assert.NotEmpty(socket.Remediation);
@@ -72,7 +72,7 @@ public class StageFaultHandlingTests
 
         AnalysisReport report = await analyzer.AnalyzeAsync(LocalConnection);
 
-        Finding socket = Assert.Single(report.AllFindings.Where(f => f.Code == "SCA0004"));
+        Finding socket = Assert.Single(report.AllFindings, f => f.Code == "SCA0004");
         Assert.DoesNotContain("between the two probes", socket.Detail);
     }
 
@@ -88,7 +88,7 @@ public class StageFaultHandlingTests
 
         AnalysisReport report = await analyzer.AnalyzeAsync(LocalConnection);
 
-        Finding generic = Assert.Single(report.AllFindings.Where(f => f.Code == "SCA0003"));
+        Finding generic = Assert.Single(report.AllFindings, f => f.Code == "SCA0003");
         Assert.Equal("InvalidOperationException: something odd", generic.Detail);
         Assert.DoesNotContain("   at ", generic.Detail);
     }
