@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SQL Connection Analyzer</title>
+    <base href="/" />
+    <!-- Inline SVG favicon: avoids shipping a static asset with the packed tool. -->
+    <link rel="icon"
+          href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='3' fill='%231e40af'/%3E%3Cpath d='M4 11l2.5-3L9 10l3-4' stroke='white' stroke-width='1.6' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E" />
+    <HeadOutlet @rendermode="InteractiveServer" />
+    <style>
+        /* Inlined deliberately: the CLI packs as a dotnet tool, and inline styles keep the
+           UI working without shipping static web assets alongside the tool. */
+        :root {
+            color-scheme: light dark;
+            --bg: #ffffff;
+            --fg: #111827;
+            --muted: #4b5563;
+            --border: #d1d5db;
+            --surface: #f9fafb;
+            --accent: #1e40af;
+            --pass-bg: #dcfce7; --pass-fg: #166534;
+            --warn-bg: #fef3c7; --warn-fg: #92400e;
+            --fail-bg: #fee2e2; --fail-fg: #991b1b;
+            --skip-bg: #e5e7eb; --skip-fg: #374151;
+            --info-bg: #dbeafe; --info-fg: #1e40af;
+        }
+        @@media (prefers-color-scheme: dark) {
+            :root {
+                --bg: #0f172a; --fg: #f1f5f9; --muted: #cbd5e1;
+                --border: #334155; --surface: #1e293b; --accent: #93c5fd;
+            }
+        }
+        * { box-sizing: border-box; }
+        body {
+            margin: 0; background: var(--bg); color: var(--fg);
+            font: 16px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+        main { max-width: 1100px; margin: 0 auto; padding: 1.5rem 1.25rem 4rem; }
+        h1 { font-size: 1.6rem; margin: 0 0 .25rem; }
+        h2 { font-size: 1.15rem; margin: 2rem 0 .75rem; }
+        .sub { color: var(--muted); margin: 0 0 1.5rem; }
+        label { display: block; font-weight: 600; margin-bottom: .35rem; }
+        textarea, input, select {
+            width: 100%; padding: .6rem .7rem; font-size: .95rem;
+            font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+            color: var(--fg); background: var(--surface);
+            border: 1px solid var(--border); border-radius: 6px;
+        }
+        textarea { min-height: 5.5rem; resize: vertical; }
+        :focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+        .row { display: flex; gap: 1rem; flex-wrap: wrap; align-items: flex-end; margin-top: 1rem; }
+        .row > div { flex: 1 1 11rem; }
+        .check { display: flex; align-items: center; gap: .5rem; }
+        .check input { width: auto; }
+        .check label { margin: 0; font-weight: 400; }
+        button {
+            font-size: 1rem; font-weight: 600; padding: .65rem 1.4rem; border-radius: 6px;
+            border: 1px solid transparent; background: var(--accent); color: #ffffff; cursor: pointer;
+        }
+        @@media (prefers-color-scheme: dark) { button { color: #0f172a; } }
+        button.secondary { background: transparent; color: var(--fg); border-color: var(--border); }
+        button:disabled { opacity: .55; cursor: not-allowed; }
+        .stage {
+            border: 1px solid var(--border); border-radius: 8px;
+            margin-bottom: .55rem; background: var(--surface); overflow: hidden;
+        }
+        .stage > summary {
+            display: flex; align-items: center; gap: .75rem;
+            padding: .7rem .9rem; cursor: pointer; list-style: none;
+        }
+        .stage > summary::-webkit-details-marker { display: none; }
+        .badge {
+            flex: none; font-size: .72rem; font-weight: 700; letter-spacing: .04em;
+            padding: .2rem .5rem; border-radius: 4px; text-transform: uppercase;
+        }
+        .badge.pass { background: var(--pass-bg); color: var(--pass-fg); }
+        .badge.warn { background: var(--warn-bg); color: var(--warn-fg); }
+        .badge.fail { background: var(--fail-bg); color: var(--fail-fg); }
+        .badge.skip { background: var(--skip-bg); color: var(--skip-fg); }
+        .badge.run  { background: var(--info-bg); color: var(--info-fg); }
+        .stage-title { flex: 1 1 auto; font-weight: 600; }
+        .ms { flex: none; color: var(--muted); font-size: .85rem; font-variant-numeric: tabular-nums; }
+        .stage-body { padding: 0 .9rem .9rem; border-top: 1px solid var(--border); }
+        .finding { border-left: 4px solid var(--border); padding: .5rem .75rem; margin: .75rem 0; }
+        .finding.error { border-left-color: var(--fail-fg); }
+        .finding.warning { border-left-color: var(--warn-fg); }
+        .finding.info { border-left-color: var(--info-fg); }
+        .finding h4 { margin: 0 0 .25rem; font-size: .95rem; }
+        .code { font-family: ui-monospace, monospace; font-size: .8rem; color: var(--muted); }
+        ul.fix { margin: .4rem 0 0; padding-left: 1.1rem; }
+        table { width: 100%; border-collapse: collapse; margin-top: .5rem; font-size: .9rem; }
+        th, td { text-align: left; padding: .35rem .5rem; border-bottom: 1px solid var(--border); }
+        th { color: var(--muted); font-weight: 600; }
+        td.k { font-family: ui-monospace, monospace; white-space: nowrap; color: var(--muted); }
+        .verdict { border-radius: 8px; padding: 1rem 1.15rem; margin: 1.5rem 0; border: 1px solid; }
+        .verdict.ok { background: var(--pass-bg); color: var(--pass-fg); border-color: var(--pass-fg); }
+        .verdict.bad { background: var(--fail-bg); color: var(--fail-fg); border-color: var(--fail-fg); }
+        .verdict.caution { background: var(--warn-bg); color: var(--warn-fg); border-color: var(--warn-fg); }
+        .verdict h2 { margin: 0 0 .4rem; font-size: 1.1rem; }
+        .bar { display: flex; align-items: center; gap: .6rem; margin: .2rem 0; }
+        .bar .lbl { flex: 0 0 12rem; font-size: .85rem; }
+        .bar .track { flex: 1 1 auto; background: var(--skip-bg); border-radius: 3px; height: .7rem; }
+        .bar .fill { background: var(--accent); height: 100%; border-radius: 3px; }
+        .visually-hidden {
+            position: absolute; width: 1px; height: 1px; overflow: hidden;
+            clip: rect(0 0 0 0); white-space: nowrap;
+        }
+        progress { width: 100%; height: .6rem; }
+    </style>
+</head>
+<body>
+    <Routes @rendermode="InteractiveServer" />
+    <script src="_framework/blazor.web.js"></script>
+    <script>
+        // Inline so the tool ships no separate static assets.
+        window.sca = {
+            download: function (fileName, content) {
+                const blob = new Blob([content], { type: 'application/octet-stream' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = fileName;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            }
+        };
+    </script>
+</body>
+</html>

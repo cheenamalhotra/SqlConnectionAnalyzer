@@ -1,0 +1,26 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Azure.Identity" Version="1.21.0" />
+    <PackageReference Include="Microsoft.Data.SqlClient" Version="7.0.2" />
+    <PackageReference Include="Microsoft.Data.SqlClient.Extensions.Azure" Version="7.0.2" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Embedded so the global tool carries its knowledge base with no external files. -->
+    <EmbeddedResource Include="Rules\sql-rules.json" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Parsing helpers stay internal; tests verify them without widening the public API. -->
+    <InternalsVisibleTo Include="SqlConnectionAnalyzer.Tests" />
+  </ItemGroup>
+
+</Project>

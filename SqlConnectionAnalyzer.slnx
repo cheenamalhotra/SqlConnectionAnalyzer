@@ -1,0 +1,9 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/SqlConnectionAnalyzer.Cli/SqlConnectionAnalyzer.Cli.csproj" />
+    <Project Path="src/SqlConnectionAnalyzer.Core/SqlConnectionAnalyzer.Core.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/SqlConnectionAnalyzer.Tests/SqlConnectionAnalyzer.Tests.csproj" />
+  </Folder>
+</Solution>

@@ -1,0 +1,313 @@
+{
+  "version": 1,
+  "rules": [
+    {
+      "code": "SQL18456.5",
+      "errorNumbers": [18456],
+      "states": [2, 5],
+      "layer": "Authentication",
+      "message": "Login failed: the user ID does not exist.",
+      "remediation": [
+        "Check the login name spelling.",
+        "Create the login, or confirm you are connecting to the intended server."
+      ]
+    },
+    {
+      "code": "SQL18456.6",
+      "errorNumbers": [18456],
+      "states": [6],
+      "layer": "Authentication",
+      "message": "Login failed: a Windows login was supplied for SQL authentication.",
+      "remediation": [
+        "Remove the domain prefix, or set 'Integrated Security=true'."
+      ]
+    },
+    {
+      "code": "SQL18456.7",
+      "errorNumbers": [18456],
+      "states": [7],
+      "layer": "Authentication",
+      "message": "Login failed: the login is disabled and the password is incorrect.",
+      "remediation": [
+        "Enable the login and reset its password."
+      ]
+    },
+    {
+      "code": "SQL18456.8",
+      "errorNumbers": [18456],
+      "states": [8, 9],
+      "layer": "Authentication",
+      "message": "Login failed: the password is incorrect.",
+      "remediation": [
+        "Verify the password, including any leading or trailing whitespace.",
+        "Check whether the password contains characters that need escaping in the connection string."
+      ]
+    },
+    {
+      "code": "SQL18456.11",
+      "errorNumbers": [18456],
+      "states": [11, 12],
+      "layer": "Authorization",
+      "message": "Login failed: the login is valid but has no server access permission.",
+      "remediation": [
+        "Grant CONNECT SQL on the server, or add the login to a role that has it.",
+        "For a Windows group login, confirm the group is granted access."
+      ]
+    },
+    {
+      "code": "SQL18456.18",
+      "errorNumbers": [18456],
+      "states": [18],
+      "layer": "Authentication",
+      "message": "Login failed: the password must be changed.",
+      "remediation": [
+        "Reset the password, or clear the MUST_CHANGE flag with ALTER LOGIN."
+      ]
+    },
+    {
+      "code": "SQL18456.38",
+      "errorNumbers": [18456],
+      "states": [38, 40],
+      "layer": "Authorization",
+      "message": "Login failed: the requested default database could not be opened.",
+      "remediation": [
+        "Set 'Initial Catalog' to a database the login can access.",
+        "Or change the login's default database with ALTER LOGIN."
+      ]
+    },
+    {
+      "code": "SQL18456.58",
+      "errorNumbers": [18456],
+      "states": [58],
+      "layer": "Authentication",
+      "message": "Login failed: SQL authentication was used but the server only allows Windows authentication.",
+      "remediation": [
+        "Enable mixed mode authentication on the server and restart the service."
+      ]
+    },
+    {
+      "code": "SQL18456",
+      "errorNumbers": [18456],
+      "states": [],
+      "layer": "Authentication",
+      "message": "Login failed for the supplied credentials (reported state {state}).",
+      "remediation": [
+        "SQL Server masks the real state in the client message. Read the server error log for the true state.",
+        "Common causes: wrong password (state 8), login does not exist (state 5), no CONNECT permission (state 11), default database inaccessible (state 38)."
+      ]
+    },
+    {
+      "code": "SQL4060",
+      "errorNumbers": [4060],
+      "layer": "Authorization",
+      "message": "The login cannot open the requested database.",
+      "remediation": [
+        "Verify the database name in 'Initial Catalog' exists and is online.",
+        "Grant the login a user in that database, or connect to 'master' first."
+      ]
+    },
+    {
+      "code": "SQL40615",
+      "errorNumbers": [40615],
+      "layer": "Transport",
+      "message": "The Azure SQL server firewall blocked the client IP address.",
+      "remediation": [
+        "Add the client IP shown in the error message to the server firewall rules.",
+        "For dynamic IPs, use a private endpoint or a VNet rule instead."
+      ]
+    },
+    {
+      "code": "SQL40613",
+      "errorNumbers": [40613],
+      "layer": "Transport",
+      "message": "The database is currently unavailable.",
+      "remediation": [
+        "This is a transient Azure condition. Retry with 'ConnectRetryCount=3'.",
+        "If it persists for more than a few minutes, check Azure Service Health."
+      ]
+    },
+    {
+      "code": "SQL40532",
+      "errorNumbers": [40532],
+      "layer": "Authentication",
+      "message": "The login could not be routed because the server name is missing from the user name.",
+      "remediation": [
+        "Use the 'user@servername' form, or specify 'Initial Catalog' explicitly."
+      ]
+    },
+    {
+      "code": "SQL18452",
+      "errorNumbers": [18452],
+      "layer": "Authentication",
+      "message": "The login is from an untrusted domain and cannot be used with Windows authentication.",
+      "remediation": [
+        "Use SQL authentication, or ensure the client is joined to a trusted domain.",
+        "Confirm the SPN is registered so Kerberos is used instead of NTLM."
+      ]
+    },
+    {
+      "code": "SQL18470",
+      "errorNumbers": [18470],
+      "layer": "Authentication",
+      "message": "The login is disabled.",
+      "remediation": [
+        "Enable it with: ALTER LOGIN [name] ENABLE;"
+      ]
+    },
+    {
+      "code": "SQL233",
+      "errorNumbers": [233],
+      "layer": "Transport",
+      "message": "The server closed the connection without a response (no process on the pipe).",
+      "remediation": [
+        "Confirm the SQL Server service is running and accepting connections.",
+        "Check whether the server has reached its connection limit or is out of worker threads."
+      ]
+    },
+    {
+      "code": "SQLTIMEOUT",
+      "errorNumbers": [258, -2],
+      "layer": "Transport",
+      "message": "The connection attempt timed out.",
+      "remediation": [
+        "Increase 'Connect Timeout'.",
+        "Rule out packet loss or a firewall dropping the session silently.",
+        "If the pool is exhausted, raise 'Max Pool Size' or ensure connections are disposed."
+      ]
+    },
+    {
+      "code": "SQLNET",
+      "errorNumbers": [10060, 10061],
+      "layer": "Transport",
+      "message": "The network connection was refused or timed out at the TCP layer.",
+      "remediation": [
+        "Verify the port is open and SQL Server is listening on it."
+      ]
+    },
+    {
+      "code": "SQL10054",
+      "errorNumbers": [10054],
+      "layer": "Tls",
+      "message": "The existing connection was forcibly closed by the remote host.",
+      "remediation": [
+        "This usually indicates a TLS negotiation failure. Confirm both ends support TLS 1.2.",
+        "Check for a firewall or intrusion-prevention device resetting the session."
+      ]
+    },
+    {
+      "code": "SQL18456.104",
+      "errorNumbers": [18456],
+      "states": [104],
+      "layer": "Authentication",
+      "message": "Login failed: the Entra ID token was rejected.",
+      "remediation": [
+        "Confirm the token audience is 'https://database.windows.net/'.",
+        "Verify the principal exists in the database as an external user."
+      ]
+    },
+    {
+      "code": "SQL18456.146",
+      "errorNumbers": [18456],
+      "states": [146],
+      "layer": "Authentication",
+      "message": "Login failed: the Entra ID token has expired or is not yet valid.",
+      "remediation": [
+        "Check for clock skew between the client and the identity provider.",
+        "Acquire a fresh token; access tokens are typically valid for one hour."
+      ]
+    },
+    {
+      "code": "SQL18456.147",
+      "errorNumbers": [18456],
+      "states": [147],
+      "layer": "Authorization",
+      "message": "Login failed: a Conditional Access policy blocked the sign-in.",
+      "remediation": [
+        "Review Entra ID Conditional Access policies for this principal and location.",
+        "Interactive authentication may be required to satisfy multi-factor requirements."
+      ]
+    },
+    {
+      "code": "SQL40914",
+      "errorNumbers": [40914],
+      "layer": "Transport",
+      "message": "A VNet or subnet rule blocked the connection.",
+      "remediation": [
+        "Add a virtual network rule for the client subnet on the logical server.",
+        "Confirm the Microsoft.Sql service endpoint is enabled on the subnet."
+      ]
+    },
+    {
+      "code": "SQL18456.16",
+      "errorNumbers": [18456],
+      "states": [16],
+      "layer": "Authorization",
+      "message": "Login failed: the login is valid but the default database is inaccessible.",
+      "remediation": [
+        "Specify an accessible database with 'Initial Catalog'.",
+        "On older servers this state also appears when the database is offline or dropped."
+      ]
+    },
+    {
+      "code": "SQL10928",
+      "errorNumbers": [10928, 10929],
+      "layer": "Resiliency",
+      "message": "The Azure SQL resource governor rejected the request because a limit was reached.",
+      "remediation": [
+        "Reduce concurrent connections or requests, or scale the database to a higher service tier.",
+        "This is transient; retry with exponential backoff."
+      ]
+    },
+    {
+      "code": "SQL49918",
+      "errorNumbers": [49918, 49919, 49920],
+      "layer": "Resiliency",
+      "message": "The request could not be processed because there are not enough resources available.",
+      "remediation": [
+        "This is a transient Azure condition. Retry with exponential backoff.",
+        "If it persists, check Azure Service Health for the region."
+      ]
+    },
+
+    // Client-side HRESULTs surfaced through SqlException during the pre-login handshake.
+    // The TCP connection succeeded, so these are never login rejections: the TLS negotiation
+    // that wraps pre-login failed, and the server never evaluated a credential.
+    {
+      "code": "SQLPRELOGIN.UNTRUSTEDROOT",
+      "errorNumbers": [-2146893019, -2146762487],
+      "layer": "Tls",
+      "message": "The TLS handshake failed during pre-login because the server certificate was not trusted.",
+      "detail": "{message}",
+      "remediation": [
+        "The TCP connection succeeded, so this is a certificate trust problem, not a bad password.",
+        "Microsoft.Data.SqlClient 4.0 and later default to 'Encrypt=True', so a self-signed certificate now fails unless it is trusted.",
+        "Install the issuing CA certificate into the client trust store.",
+        "Pin the certificate with the 'ServerCertificate' keyword, or set 'HostNameInCertificate' if only the name is wrong.",
+        "For a trusted local or test server only, set 'TrustServerCertificate=True'."
+      ]
+    },
+    {
+      "code": "SQLPRELOGIN.NAMEMISMATCH",
+      "errorNumbers": [-2146762481, -2146893022],
+      "layer": "Tls",
+      "message": "The TLS handshake failed during pre-login because the certificate name did not match the server name.",
+      "detail": "{message}",
+      "remediation": [
+        "Connect using a name that appears in the certificate's Subject Alternative Name extension.",
+        "Set 'HostNameInCertificate' to the name the certificate was issued for.",
+        "Reissue the certificate to cover the name you connect with."
+      ]
+    },
+    {
+      "code": "SQLPRELOGIN.CERTEXPIRED",
+      "errorNumbers": [-2146893016, -2146762495],
+      "layer": "Tls",
+      "message": "The TLS handshake failed during pre-login because the server certificate has expired or is not yet valid.",
+      "detail": "{message}",
+      "remediation": [
+        "Renew the server certificate and rebind it in SQL Server Configuration Manager.",
+        "Confirm the client clock is correct; a skewed clock makes a valid certificate look expired."
+      ]
+    }
+  ]
+}

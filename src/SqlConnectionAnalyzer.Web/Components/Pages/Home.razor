@@ -1,0 +1,197 @@
+@page "/"
+@inject IServiceProvider Services
+@inject WebUiOptions UiOptions
+@implements IDisposable
+
+<PageTitle>SQL Connection Analyzer</PageTitle>
+
+<main>
+    <h1>SQL Connection Analyzer</h1>
+    <p class="sub">
+        Probes each layer of the MS-TDS login flow independently, so the first stage that fails
+        is the actual cause.
+    </p>
+
+    <EditForm Model="_form" OnValidSubmit="RunAsync">
+        <div>
+            <label for="cs">Connection string</label>
+            <textarea id="cs" @bind="_form.ConnectionString" @bind:event="oninput" spellcheck="false"
+                      aria-describedby="cs-help"
+                      placeholder="Server=tcp:myserver.database.windows.net,1433;Database=mydb;Authentication=Active Directory Default"></textarea>
+            <p id="cs-help" class="code">
+                Passwords and tokens are redacted everywhere they are displayed or exported.
+            </p>
+        </div>
+
+        <div class="row">
+            <div>
+                <label for="timeout">Probe timeout (seconds)</label>
+                <input id="timeout" type="number" min="1" max="120" @bind="_form.TimeoutSeconds" />
+            </div>
+            <div class="check">
+                <input id="matrix" type="checkbox" @bind="_form.Matrix" />
+                <label for="matrix">Encryption matrix</label>
+            </div>
+            <div class="check">
+                <input id="trace" type="checkbox" @bind="_form.Trace" />
+                <label for="trace">Capture SqlClient trace</label>
+            </div>
+            <div style="flex:0 0 auto">
+                <button type="submit" disabled="@(_running || string.IsNullOrWhiteSpace(_form.ConnectionString))">
+                    @(_running ? "Analyzing..." : "Analyze")
+                </button>
+            </div>
+            @if (_running)
+            {
+                <div style="flex:0 0 auto">
+                    <button type="button" class="secondary" @onclick="Cancel">Cancel</button>
+                </div>
+            }
+        </div>
+    </EditForm>
+
+    @if (_running || _stages.Count > 0)
+    {
+        <h2 id="progress-heading">Progress</h2>
+        <progress max="@_total" value="@CompletedCount"
+                  aria-labelledby="progress-heading"></progress>
+        <p class="code" role="status" aria-live="polite">@StatusText</p>
+
+        @foreach (StageSnapshot stage in _stages)
+        {
+            <details class="stage" open="@(stage.Status is StageStatus.Failed or StageStatus.Warning)">
+                <summary>
+                    <span class="badge @BadgeClass(stage.Status)">@BadgeText(stage.Status)</span>
+                    <span class="stage-title">@stage.Title</span>
+                    <span class="ms">@FormatMs(stage.Elapsed)</span>
+                </summary>
+                <div class="stage-body">
+                    @if (!string.IsNullOrWhiteSpace(stage.SkipReason))
+                    {
+                        <p class="code">@stage.SkipReason</p>
+                    }
+
+                    @foreach (Finding finding in stage.Findings)
+                    {
+                        <div class="finding @SeverityClass(finding.Severity)">
+                            <h4>@finding.Severity.ToString().ToUpperInvariant(): @finding.Message</h4>
+                            <div class="code">@finding.Code &middot; @finding.Layer</div>
+                            @if (!string.IsNullOrWhiteSpace(finding.Detail))
+                            {
+                                <p>@finding.Detail</p>
+                            }
+                            @if (finding.Remediation.Count > 0)
+                            {
+                                <ul class="fix">
+                                    @foreach (string step in finding.Remediation)
+                                    {
+                                        <li>@step</li>
+                                    }
+                                </ul>
+                            }
+                        </div>
+                    }
+
+                    @if (stage.Evidence.Count > 0)
+                    {
+                        <table>
+                            <caption class="visually-hidden">Evidence collected by @stage.Title</caption>
+                            <thead><tr><th scope="col">Key</th><th scope="col">Value</th></tr></thead>
+                            <tbody>
+                                @foreach (KeyValuePair<string, string?> item in stage.Evidence)
+                                {
+                                    <tr><td class="k">@item.Key</td><td>@item.Value</td></tr>
+                                }
+                            </tbody>
+                        </table>
+                    }
+
+                    @if (stage.Findings.Count == 0 && stage.Evidence.Count == 0
+                         && string.IsNullOrWhiteSpace(stage.SkipReason))
+                    {
+                        <p class="code">Nothing to report.</p>
+                    }
+                </div>
+            </details>
+        }
+    }
+
+    @if (_report is { } report)
+    {
+        <div class="verdict @VerdictClass(report)">
+            <h2>@VerdictHeading(report)</h2>
+            <p>
+                @report.Stages.Count stages in @FormatMs(report.TotalElapsed).
+                Endpoint classified as @report.EndpointKind.
+            </p>
+            @if (report.FirstFailure is { } failure)
+            {
+                <p><strong>First failure:</strong> @failure.Title &mdash; @(failure.WorstFinding?.Message)</p>
+            }
+            @if (report.Concerns.Count > 0)
+            {
+                <ul class="fix">
+                    @foreach (Finding concern in report.Concerns)
+                    {
+                        <li>@concern.Severity.ToString().ToUpperInvariant(): @concern.Message (@concern.Code)</li>
+                    }
+                </ul>
+            }
+        </div>
+
+        <h2>Where the time went</h2>
+        @foreach (StageSnapshot stage in _stages.Where(s => s.Elapsed > TimeSpan.Zero))
+        {
+            <div class="bar">
+                <span class="lbl">@stage.Title</span>
+                <span class="track" role="img"
+                      aria-label="@stage.Title took @FormatMs(stage.Elapsed)">
+                    <span class="fill" style="width:@(Percent(stage, report))%"></span>
+                </span>
+                <span class="ms">@FormatMs(stage.Elapsed)</span>
+            </div>
+        }
+
+        @if (report.MatrixOutcomes.Count > 0)
+        {
+            <h2>Encryption matrix</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th scope="col">Encrypt</th>
+                        <th scope="col">TrustServerCertificate</th>
+                        <th scope="col">Result</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (MatrixOutcome outcome in report.MatrixOutcomes)
+                    {
+                        <tr>
+                            <td class="k">@outcome.Encrypt</td>
+                            <td class="k">@outcome.TrustServerCertificate</td>
+                            <td>
+                                <span class="badge @(outcome.Succeeded ? "pass" : "fail")">
+                                    @(outcome.Succeeded ? "Connected" : "Failed")
+                                </span>
+                                @if (!outcome.Succeeded && !string.IsNullOrWhiteSpace(outcome.Error))
+                                {
+                                    <span> @outcome.Error</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+
+        <h2>Export</h2>
+        <div class="row">
+            <div style="flex:0 0 auto">
+                <button type="button" class="secondary" @onclick="DownloadJson">Download JSON</button>
+            </div>
+            <div style="flex:0 0 auto">
+                <button type="button" class="secondary" @onclick="DownloadMarkdown">Download Markdown</button>
+            </div>
+        </div>
+    }
+</main>
