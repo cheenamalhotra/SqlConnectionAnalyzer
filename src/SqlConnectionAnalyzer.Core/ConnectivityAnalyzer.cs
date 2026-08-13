@@ -81,7 +81,8 @@ public sealed class ConnectivityAnalyzer
             if (options.MatrixMode)
             {
                 await RunMatrixAsync(report, context, options, cancellationToken).ConfigureAwait(false);
-            }        }
+            }
+        }
         finally
         {
             if (listener is not null)

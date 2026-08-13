@@ -94,7 +94,8 @@ public class RoutingStageTests
     }
 
     [Fact]
-    public async Task NonAzureEndpointsSkipTheRedirectRangeProbe()    {
+    public async Task NonAzureEndpointsSkipTheRedirectRangeProbe()
+    {
         StageResult result = await RunRoutingAsync(
             "Server=sql01;Database=db",
             EndpointKind.OnPremises,
@@ -120,7 +121,7 @@ public class RoutingStageTests
         Assert.Contains("refused", result.Evidence["Port 11000"], StringComparison.OrdinalIgnoreCase);
     }
 
-    private static async Task<StageResult> RunRoutingAsync(        string connectionString,
+    private static async Task<StageResult> RunRoutingAsync(string connectionString,
         EndpointKind kind,
         IPAddress[] addresses)
     {

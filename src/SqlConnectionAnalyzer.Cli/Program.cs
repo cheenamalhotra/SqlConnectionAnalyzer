@@ -53,7 +53,8 @@ if (options.Serve)
     return await WebUiLauncher.RunAsync(options, cancellation.Token);
 }
 
-var renderer = new ChecklistRenderer(options.Verbose);renderer.Attach(analyzer);
+var renderer = new ChecklistRenderer(options.Verbose);
+renderer.Attach(analyzer);
 
 AnsiConsole.Write(new Rule("[bold]SQL connectivity analysis[/]").LeftJustified());
 AnsiConsole.MarkupLine($"[grey]{Markup.Escape(Redactor.ConnectionString(options.ConnectionString!))}[/]");

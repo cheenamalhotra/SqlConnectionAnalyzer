@@ -1,0 +1,42 @@
+version: 2
+updates:
+  # This tool handles credentials and TLS, so dependency CVEs matter more than usual.
+  # Project directories are listed explicitly because Dependabot's NuGet updater
+  # discovers projects via a solution file, and the .slnx format is not reliably parsed.
+  - package-ecosystem: nuget
+    directories:
+      - /src/SqlConnectionAnalyzer.Core
+      - /src/SqlConnectionAnalyzer.Cli
+      - /src/SqlConnectionAnalyzer.Web
+      - /tests/SqlConnectionAnalyzer.Tests
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 10
+    commit-message:
+      prefix: deps
+    groups:
+      # Keep the SqlClient and Azure identity stacks together; their versions are coupled
+      # and splitting them produces PRs that cannot pass restore on their own.
+      data-and-identity:
+        patterns:
+          - Microsoft.Data.SqlClient*
+          - Azure.*
+          - Microsoft.Identity*
+      test:
+        patterns:
+          - xunit*
+          - Microsoft.NET.Test.Sdk
+          - coverlet*
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    commit-message:
+      prefix: ci
+    groups:
+      actions:
+        patterns:
+          - '*'

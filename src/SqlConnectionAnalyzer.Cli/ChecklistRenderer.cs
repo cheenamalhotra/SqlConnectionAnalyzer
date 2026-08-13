@@ -239,7 +239,8 @@ public sealed class ChecklistRenderer
     private static string Pluralize(int count) => count == 1 ? "1 issue" : $"{count} issues";
 
     private static void RenderVerdict(AnalysisReport report)
-    {        AnsiConsole.WriteLine();
+    {
+        AnsiConsole.WriteLine();
 
         StageResult? failure = report.FirstFailure;
 
